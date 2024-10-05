@@ -50,6 +50,8 @@ function init()
         push!(M_intervals, interval)
     end
 
+    global numb_of_process = length(M)
+
     #       - Gera os dados...
     xo_to_entropy = range(0.00001, 0.99999, 5)
     xo_to_train_mlp = rand(Float64, 720)
@@ -120,10 +122,10 @@ function init()
         push!(tasks, task)
     end
 
-    progress_task = Threads.@spawn progress_helper(length(M))
+    #progress_task = Threads.@spawn progress_helper(length(M))
     wait.(tasks)
-    global running_progress = false
-    wait.(progress_task)
+    #global running_progress = false
+    #wait.(progress_task)
 
     save_object("out/entropy.dat", entropy_data)
     save_object("out/accuracy.dat", accuracy_data)

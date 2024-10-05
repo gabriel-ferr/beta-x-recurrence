@@ -50,5 +50,6 @@ function async_main(M, th_id)
 
         wait.(mlp_tasks)
         progress[th_id] += 1
+        println((sum(progress) / (numb_of_process * 1.0)) * 100)
     end
 end
