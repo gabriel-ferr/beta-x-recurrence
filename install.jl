@@ -1,13 +1,15 @@
-#
-#       Install the required packages...
-import Pkg;
+import Pkg
 
 Pkg.add("JLD2")
 Pkg.add("Flux")
-Pkg.add("Distances")
-Pkg.add("StatsBase")
 Pkg.add("Statistics")
+Pkg.add("ProgressMeter")
 Pkg.add("LinearAlgebra")
 
-mkdir("obj")
-mkdir("out")
+if (!isdir("out"))
+    mkdir("out")
+end
+
+if (!isdir("obj"))
+    mkdir("obj")
+end
