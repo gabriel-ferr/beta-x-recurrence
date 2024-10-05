@@ -8,7 +8,6 @@ using .RP
 
 using JLD2
 using Flux
-using CairoMakie
 using Statistics
 using LinearAlgebra
 
@@ -17,11 +16,19 @@ const timeseries_size = 500
 const motif_size = 3
 const epochs = 30
 
-const ε = range(0, 0.9995, 100)
+const ε = range(0, 0.9995, 10)
 const pvec = power_vector(motif_size)
 
+progress = zeros(Int, Threads.nthreads())
+running_progress = true
+
 include("src/beta-x.jl")
+include("src/calc-accuracy.jl")
+include("src/calc-probs.jl")
+include("src/calc-etr.jl")
+include("src/mlp-train.jl")
 include("src/main.jl")
+include("src/progress-help.jl")
 
 function init()
     C = range(2, length(ε))
@@ -104,6 +111,25 @@ function init()
 
         save_object(string("obj/net-", i, ".mlp"), f64(model))
     end
+
+    tasks = []
+    th_id = 1
+    for interval in M_intervals
+        task = Threads.@spawn async_main(M[interval], th_id)
+        th_id += 1
+        push!(tasks, task)
+    end
+
+    progress_task = Threads.@spawn progress_helper(length(M))
+    wait.(tasks)
+    global running_progress = false
+    wait.(progress_task)
+
+    save_object("out/entropy.dat", entropy_data)
+    save_object("out/accuracy.dat", accuracy_data)
+    save_object("out/etr_serie.dat", serie_to_entropy)
+    save_object("out/etr_train.dat", serie_to_train_mlp)
+    save_object("out/etr_test.dat", serie_to_test_mlp)
 end
 
 init()
