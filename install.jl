@@ -10,3 +10,4 @@ Pkg.add("CairoMakie")
 Pkg.add("Statistics")
 Pkg.add("LinearAlgebra")
 
+mkdir("obj")
