@@ -6,6 +6,7 @@ using Flux
 using Statistics
 using ProgressMeter
 using LinearAlgebra
+using BenchmarkTools
 
 const β_values = [2.99, 3.59, 3.99, 4.59, 4.99, 5.59, 5.99, 6.59]
 const timeseries_size = 500
@@ -223,4 +224,4 @@ function β(x; transient=round(Int, (10 * timeseries_size)))
     return serie
 end
 
-main()
+@time main()

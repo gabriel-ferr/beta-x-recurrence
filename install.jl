@@ -5,6 +5,7 @@ Pkg.add("Flux")
 Pkg.add("Statistics")
 Pkg.add("ProgressMeter")
 Pkg.add("LinearAlgebra")
+Pkg.add("BenchmarkTools")
 
 if (!isdir("out"))
     mkdir("out")
