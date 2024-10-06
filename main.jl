@@ -8,7 +8,7 @@ using ProgressMeter
 using LinearAlgebra
 using BenchmarkTools
 
-const β_values = [2.99, 3.59, 3.99, 4.59, 4.99, 5.59, 5.99, 6.59]
+const β_values = [2.99, 3.59, 3.99, 4.59, 4.99, 5.59]
 const timeseries_size = 500
 const mlp_samples = 1
 const motif_size = 2
@@ -96,14 +96,14 @@ function main()
     end
 
     status = load_object("status.dat")
-    for i = status[1]:length(M)
+    @showprogress for i = status[1]:length(M)
         m = M[i]
         mlp_probs_to_train = zeros(Float64, 2^(motif_size * motif_size), size(serie_to_train_mlp, 3), length(β_values))
         mlp_probs_to_test = zeros(Float64, 2^(motif_size * motif_size), size(serie_to_test_mlp, 3), length(β_values))
         for beta in eachindex(β_values)
             #       Primeiro, calcula as entropias...
             tasks = []
-            for sp = 1:length(xo_to_entropy)
+            for sp = 1:5
                 push!(tasks, Threads.@spawn calc_entropy(serie_to_entropy[:, :, sp, beta], m))
             end
 
