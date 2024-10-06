@@ -7,18 +7,18 @@ using Statistics
 using ProgressMeter
 using LinearAlgebra
 
-const β_values = [2.59, 2.99, 3.59, 3.99, 4.59, 4.99, 5.59, 5.99, 6.59, 6.99]
+const β_values = [2.99, 3.59, 3.99, 4.59, 4.99, 5.59, 5.99, 6.59]
 const timeseries_size = 500
-const mlp_samples = Threads.nthreads()
-const motif_size = 3
-const epochs = 50
+const mlp_samples = 1
+const motif_size = 2
+const epochs = 40
 
 const ε = range(0, 0.9995, 100)
 const pvec = power_vector(motif_size)
 
 function main()
     xo_to_entropy = range(0.00001, 0.99999, 5)
-    xo_to_train_mlp = rand(Float64, 720)
+    xo_to_train_mlp = rand(Float64, 480)
     xo_to_test_mlp = rand(Float64, floor(Int, length(xo_to_train_mlp) / 3))
     for i in eachindex(xo_to_test_mlp)
         while (xo_to_test_mlp[i] in xo_to_train_mlp)
@@ -86,7 +86,14 @@ function main()
         end
     end
 
-    @showprogress for m in M
+    if (!isfile("status.dat"))
+        save_object("status.dat", 1)
+    end
+
+    status = load_object("status.dat")
+
+    @showprogress for i = status:M
+        m = M[i]
         mlp_probs_to_train = zeros(Float64, 2^(motif_size * motif_size), size(serie_to_train_mlp, 3), length(β_values))
         mlp_probs_to_test = zeros(Float64, 2^(motif_size * motif_size), size(serie_to_test_mlp, 3), length(β_values))
         for beta in eachindex(β_values)
@@ -133,13 +140,14 @@ function main()
         end
 
         wait.(mlp_tasks)
-    end
 
-    save_object("out/entropy.dat", entropy_data)
-    save_object("out/accuracy.dat", accuracy_data)
-    save_object("out/etr_serie.dat", serie_to_entropy)
-    save_object("out/etr_train.dat", serie_to_train_mlp)
-    save_object("out/etr_test.dat", serie_to_test_mlp)
+        save_object("out/entropy.dat", entropy_data)
+        save_object("out/accuracy.dat", accuracy_data)
+        save_object("out/etr_serie.dat", serie_to_entropy)
+        save_object("out/etr_train.dat", serie_to_train_mlp)
+        save_object("out/etr_test.dat", serie_to_test_mlp)
+        save_object("status.dat", i + 1)
+    end
 end
 
 function calc_accuracy(predict, trusty)
