@@ -96,7 +96,7 @@ function main()
     end
 
     status = load_object("status.dat")
-    for i = status:length(M)
+    for i = status[1]:length(M)
         m = M[i]
         mlp_probs_to_train = zeros(Float64, 2^(motif_size * motif_size), size(serie_to_train_mlp, 3), length(β_values))
         mlp_probs_to_test = zeros(Float64, 2^(motif_size * motif_size), size(serie_to_test_mlp, 3), length(β_values))
