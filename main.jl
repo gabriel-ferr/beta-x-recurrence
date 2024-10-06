@@ -17,25 +17,46 @@ const epochs = 40
 const ε = range(0, 0.9995, 100)
 const pvec = power_vector(motif_size)
 
+
 function main()
-    xo_to_entropy = range(0.00001, 0.99999, 5)
-    xo_to_train_mlp = rand(Float64, 480)
-    xo_to_test_mlp = rand(Float64, floor(Int, length(xo_to_train_mlp) / 3))
-    for i in eachindex(xo_to_test_mlp)
-        while (xo_to_test_mlp[i] in xo_to_train_mlp)
-            new_value = rand(Float64, 1)
-            while (new_value in xo_to_test_mlp)
+    if (!isfile("status.dat"))
+        save_object("status.dat", [1])
+        xo_to_entropy = range(0.00001, 0.99999, 5)
+        xo_to_train_mlp = rand(Float64, 480)
+        xo_to_test_mlp = rand(Float64, floor(Int, length(xo_to_train_mlp) / 3))
+        for i in eachindex(xo_to_test_mlp)
+            while (xo_to_test_mlp[i] in xo_to_train_mlp)
                 new_value = rand(Float64, 1)
+                while (new_value in xo_to_test_mlp)
+                    new_value = rand(Float64, 1)
+                end
+                xo_to_test_mlp[i] = new_value
             end
-            xo_to_test_mlp[i] = new_value
+        end
+        save_object("out/entropy.dat", zeros(Float64, length(ε), length(ε), length(β_values)))
+        save_object("out/accuracy.dat", zeros(Float64, length(ε), length(ε), epochs, mlp_samples))
+        save_object("out/etr_serie.dat", β(xo_to_entropy))
+        save_object("out/etr_train.dat", β(xo_to_train_mlp))
+        save_object("out/etr_test.dat", β(xo_to_test_mlp))
+
+        for i = 1:mlp_samples
+            model = Chain(
+                Dense(2^(motif_size * motif_size) => 128, identity),
+                Dense(128 => 64, selu),
+                Dense(64 => 32, selu),
+                Dense(32 => length(β_values)),
+                softmax
+            )
+
+            save_object(string("obj/net-", i, ".mlp"), f64(model))
         end
     end
 
-    global serie_to_entropy = β(xo_to_entropy)
-    global serie_to_test_mlp = β(xo_to_test_mlp)
-    global serie_to_train_mlp = β(xo_to_train_mlp)
-    global entropy_data = zeros(Float64, length(ε), length(ε), length(β_values))
-    global accuracy_data = zeros(Float64, length(ε), length(ε), epochs, mlp_samples)
+    global serie_to_entropy = load_object("out/etr_serie.dat")
+    global serie_to_test_mlp = load_object("out/etr_test.dat")
+    global serie_to_train_mlp = load_object("out/etr_train.dat")
+    global entropy_data = load_object("out/entropy.dat")
+    global accuracy_data = load_object("out/accuracy.dat")
 
     _train_partitions = []
     _test_partitions = []
@@ -53,7 +74,6 @@ function main()
     global train_partition = _train_partitions
     global test_partition = _test_partitions
 
-    #       Monta os labels para usar no cálculo da accuracy...
     _train_labels = ones(Float64, size(serie_to_train_mlp, 3) * length(β_values))
     _test_labels = ones(Float64, size(serie_to_test_mlp, 3) * length(β_values))
 
@@ -65,18 +85,6 @@ function main()
     global train_labels = Flux.onehotbatch(_train_labels, β_values)
     global test_labels = Flux.onehotbatch(_test_labels, β_values)
 
-    for i = 1:mlp_samples
-        model = Chain(
-            Dense(2^(motif_size * motif_size) => 128, identity),
-            Dense(128 => 64, selu),
-            Dense(64 => 32, selu),
-            Dense(32 => length(β_values)),
-            softmax
-        )
-
-        save_object(string("obj/net-", i, ".mlp"), f64(model))
-    end
-
     C = range(2, length(ε))
     R = range(1, length(ε) - 1)
     M = []
@@ -87,13 +95,8 @@ function main()
         end
     end
 
-    if (!isfile("status.dat"))
-        save_object("status.dat", [1])
-    end
-
     status = load_object("status.dat")
-
-    @showprogress for i = status[1]:M
+    for i = status:length(M)
         m = M[i]
         mlp_probs_to_train = zeros(Float64, 2^(motif_size * motif_size), size(serie_to_train_mlp, 3), length(β_values))
         mlp_probs_to_test = zeros(Float64, 2^(motif_size * motif_size), size(serie_to_test_mlp, 3), length(β_values))
@@ -144,12 +147,10 @@ function main()
 
         save_object("out/entropy.dat", entropy_data)
         save_object("out/accuracy.dat", accuracy_data)
-        save_object("out/etr_serie.dat", serie_to_entropy)
-        save_object("out/etr_train.dat", serie_to_train_mlp)
-        save_object("out/etr_test.dat", serie_to_test_mlp)
         save_object("status.dat", [i + 1])
     end
 end
+
 
 function calc_accuracy(predict, trusty)
     conf = zeros(Int, length(β_values), length(β_values))
